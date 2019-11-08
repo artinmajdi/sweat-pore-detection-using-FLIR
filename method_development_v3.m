@@ -17,9 +17,14 @@ imO = read_image(index, dataset_dir, true);
 % candidates1_watershed = keeping_the_watershed_area(watershed_output, candidates1);
 
 %% write as a video
-L = 5950;
-save_video(dataset_dir, L)
+L = 1000;
+T = linspace(1,33.3,1000);
+[Area , PC] = save_video(dataset_dir, L);
 
+%%  extras for presentation
+% show_the_manual_filter(3, 11)
+
+   
 %% functions
 function [im1d, im1d_binarize] = apply_filter_V1(im1_woBg,sensitivity)
     % local differentiation
@@ -82,7 +87,7 @@ function [msk, im1 , im4] = apply_filter_V2(im, Background, shape)
     
 %     ax(1) = subplot(2,3,[1,2,4,5]); imshow(im(40:end,40:end))  ; title('Original Image', 'FontSize',18)% , hold on , visboundaries(msk)
 %     ax(2) = subplot(233); imshow(im4(40:end,40:end)) ; title('Fitlered Image', 'FontSize',18) % , hold on , visboundaries(msk)
-%     ax(3) = subplot(236); imshow(im(40:end,40:end)) ; title('Fitlered Image With Detected pores', 'FontSize',18), hold on , visboundaries(msk(40:end,40:end))
+%     ax(3) = subplot(236); imshow(im(40:end,40:end)) ; title('Image With Detected pores', 'FontSize',18), hold on , visboundaries(msk(40:end,40:end))
 %     linkaxes(ax)
     
 end
@@ -170,21 +175,28 @@ function mask = keeping_the_watershed_area(watershed_output, binary_mask)
     end
 end
 
-function save_video(dataset_dir, L)
+function [Area , PC] = save_video(dataset_dir, L)
     
     writerObj = VideoWriter([dataset_dir ,'myVideo1.avi']);
-    writerObj.FrameRate = 5;
+    writerObj.FrameRate = 10;
 
     secsPerImage = 1;
     open(writerObj);
     
+    PC = zeros(L,1);
+    Area = cell(L,1);
     for index = 1:L
         if mod(index,5) == 0 disp(['Frame:',num2str(index)]), end
         
         im = read_image(index, dataset_dir, true);
         [im, Background] = removeBackground(im);
 
-        [prediction, im1 , im4] = apply_filter2(im, Background, "same");
+        [prediction, im1 , im4] = apply_filter_V2(im, Background, "same");
+        
+        obj = regionprops(prediction(40:end,40:end) , 'Area');
+        Area{index} = cat(1,obj.Area);
+        PC(index) = length(obj);
+        
         msk = post_process(im , im1 , prediction);
 
         frame = im2frame(msk);
@@ -199,38 +211,30 @@ function save_video(dataset_dir, L)
     end
 end
 
-
-% %%  extras for presentation
-% %     clc
-% %     clear
-% %     h = [-1,-1,-1;-1,8,-1;-1,-1,-1];
-% 
-% %     L = 7;
-% %     h1 = -1.8*ones(L,L);
-% %     h1(3:5,3:5) = 8;
-% %     
-% %     h2 = ones(L,L)/(L^2);    
-% %     h3 = conv2(h1,h2);    
-% 
+function show_the_manual_filter(L, L2)
 %     L = 3;
-%     h1 = -1*ones(L,L);
-%     h1(2,2) = 8;
-%     
-%     h2 = ones(L,L)/(L^2);    
-%     h3 = conv2(h1,h2);    
-% 
-%     [X,Y] = meshgrid(1:2*L-1 , 1:2*L-1);
-%     surf(fittedmodel(X,Y),h3)
-%     
-% %     L2 = 50;
-% %     x1 = ceil( (L2-(2*L-1))/2 );
-% %     H = zeros(L2,L2);
-% %     H(x1:x1+2*L-2,x1:x1+2*L-2) = h3;
-% % %     [X,Y] = meshgrid(1:L2 , 1:L2);
-% % %     surf(fittedmodel(X,Y),H)
-% % 
-% %     [X,Y] = meshgrid(1:2*L-1 , 1:2*L-1);
-% %     surf(fittedmodel(X,Y),h3)
+    d = floor(L/3);
+    h1 = -(L^2-8*(d^2))*ones(L,L);
+
+    l = (L - d)/2;
+    h1(l+1:end-l,l+1:end-l) = 8;
+    [X1,Y1] = meshgrid(1:L , 1:L);
+
+
+    h2 = ones(L,L)/(L^2);    
+    h12 = conv2(h2, h1);   
+
+%     L2 = 11;
+    [X3,Y3] = meshgrid(1:L2 , 1:L2);
+    h3 = zeros(L2,L2);
+
+    l = (L2 - (2*L-1))/2;
+    h3(l+1:end-l,l+1:end-l) = h12;
+
+
+    [fitresult, gof] = createFit1(X3, Y3, h3)
+
+end
 
 %%
 % app_designer_address: 'C:\Users\artin\AppData\Roaming\MathWorks\MATLAB Add-Ons\Collections\App Designer - Image Processing'
