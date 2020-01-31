@@ -1,30 +1,30 @@
 clc
 clear
 
-dataset_dir = 'F:\RESEARCH\Data7\FLIR\Dataset\video sample\tif\';
-index = 160;
+mode = 'video'; % 'video' 'image'        'image': Read tif images  'video': Read from video
+if strcmp(mode,'image')
+    dataset_dir = 'G:\FLIR Datasets\Dataset\new_Jan2\tif\';    
+else
+    dataset_dir = 'G:\FLIR Datasets\Dataset\new_Jan2\';
+end
 
-imO = read_image(index, dataset_dir, true);
-[im, Background] = removeBackground(imO);
+%%
+if strcmp(mode,'image')
+    
+    im = read_image(160, dataset_dir, true);
+    [im, Background] = removeBackground(im);
+    [msk, im1 , im4] = apply_filter_V2(im, Background, "same");
+    
+elseif strcmp(mode,'video')
+    
+    if strcmp(mode,'TIFF')
+        [Area , PC] = save_video_from_tif_image(dataset_dir, 50);
+    else 
+        [Area , PC] = save_video_from_video_tif(dataset_dir);
+    end 
 
-%% enhancing the dots
-
-% [im_filtered, candidates1] = apply_filter_V1(im,0.4);
-[msk, im1 , im4] = apply_filter_V2(im, Background, "same");
-
-%% watershed segmentation
-% im5 = watershed(im4,4);
-% candidates1_watershed = keeping_the_watershed_area(watershed_output, candidates1);
-
-%% write as a video
-L = 1000;
-T = linspace(1,33.3,1000);
-[Area , PC] = save_video(dataset_dir, L);
-
-%%  extras for presentation
-% show_the_manual_filter(3, 11)
-
-   
+end
+  
 %% functions
 function [im1d, im1d_binarize] = apply_filter_V1(im1_woBg,sensitivity)
     % local differentiation
@@ -135,9 +135,12 @@ function im = read_image(index, dataset_dir, normalize)
     
     % dir = 'F:\Datasets\FLIR\video sample\tif\';
     name = ['Rec-000020 - Copy - test_',int2str(index),'.tif'];
+    name2 = ['Rec-000020 - Copy - test_',int2str(index),'.mat'];
 %     disp(name)
     Dirr = [dataset_dir, name];
+    Dirr2 = [dataset_dir, name2];
     im = imread(Dirr);
+    im2 = load(Dirr2);
     
     if normalize
         im = func_normalize(im,1);
@@ -146,6 +149,7 @@ function im = read_image(index, dataset_dir, normalize)
 end
 
 function im = func_normalize(im,type)
+    im = single(im);
     mn = min(im(:));
     mx = max(im(:));
     if type == 16
@@ -175,7 +179,7 @@ function mask = keeping_the_watershed_area(watershed_output, binary_mask)
     end
 end
 
-function [Area , PC] = save_video(dataset_dir, L)
+function [Area , PC] = save_video_from_tif_image(dataset_dir, L)
     
     writerObj = VideoWriter([dataset_dir ,'myVideo1.avi']);
     writerObj.FrameRate = 10;
@@ -189,6 +193,91 @@ function [Area , PC] = save_video(dataset_dir, L)
         if mod(index,5) == 0 disp(['Frame:',num2str(index)]), end
         
         im = read_image(index, dataset_dir, true);
+        im = im(:,:,1);
+        [im, Background] = removeBackground(im);
+
+        [prediction, im1 , im4] = apply_filter_V2(im, Background, "same");
+        
+        obj = regionprops(prediction(40:end,40:end) , 'Area');
+        Area{index} = cat(1,obj.Area);
+        PC(index) = length(obj);
+        
+        msk = post_process(im , im1 , prediction);
+
+        frame = im2frame(msk);
+%         a = vision.PointTracker(frame);
+        writeVideo(writerObj, frame);
+    end
+    close(writerObj);
+    
+    function msk = post_process(im , imFiltered , prediction)
+        merged = 256*horzcat( im(40:end,40:end),imFiltered(40:end,40:end) , single(prediction(40:end,40:end)) );
+        msk = uint8(cat(3,merged,merged,merged));     
+    end
+end
+
+function [Area , PC] = save_video_from_video_wmv(dataset_dir)
+    
+    videoFReader  = vision.VideoFileReader([dataset_dir , 'video1.wmv']);
+
+    writerObj = VideoWriter([dataset_dir ,'myVideo1.avi']);
+    writerObj.FrameRate = 10;
+    L = 100;
+%     secsPerImage = 1;
+    open(writerObj);
+    
+    PC = zeros(L,1);
+    Area = cell(L,1);
+    for index = 1:L
+        if mod(index,5) == 0 disp(['Frame:',num2str(index)]), end
+        
+%         im = read_image(index, dataset_dir, true);
+        im = rgb2gray(videoFReader());
+        im = func_normalize(im,1);
+        
+        
+        [im, Background] = removeBackground(im);
+
+        [prediction, im1 , im4] = apply_filter_V2(im, Background, "same");
+        
+        obj = regionprops(prediction(40:end,40:end) , 'Area');
+        Area{index} = cat(1,obj.Area);
+        PC(index) = length(obj);
+        
+        msk = post_process(im , im1 , prediction);
+
+        frame = im2frame(msk);
+%         a = vision.PointTracker(frame);
+        writeVideo(writerObj, frame);
+    end
+    close(writerObj);
+    
+    function msk = post_process(im , imFiltered , prediction)
+        merged = 256*horzcat( im(40:end,40:end),imFiltered(40:end,40:end) , single(prediction(40:end,40:end)) );
+        msk = uint8(cat(3,merged,merged,merged));     
+    end
+end
+
+function [Area , PC] = save_video_from_video_tif(dataset_dir)
+    
+    filename = [dataset_dir , 'Rec-000020 - Copy - test.tif'];
+    
+    writerObj = VideoWriter([dataset_dir ,'Rec-000020 - Copy - test.avi']);
+    writerObj.FrameRate = 10;
+    open(writerObj);
+    
+    info = imfinfo(filename);
+    L = length(info);
+    PC = zeros(L,1);
+    Area = cell(L,1);
+    for index = 1:50 % L
+        if mod(index,5) == 0 
+            disp(['Frame:',num2str(index)]), end
+        
+        im = imread(filename, index);
+        im = func_normalize(im,1);
+        
+        
         [im, Background] = removeBackground(im);
 
         [prediction, im1 , im4] = apply_filter_V2(im, Background, "same");
