@@ -1,1 +1,0 @@
-# sweatpore_FLIR

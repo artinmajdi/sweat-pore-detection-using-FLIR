@@ -2,10 +2,18 @@ clc
 clear
 
 mode = 'video'; % 'video' 'image'        'image': Read tif images  'video': Read from video
+
+OS = 'windows_data7';
+if strcmp(OS,'linux_data7')
+    input_Hard_Drive = '\media\artin\HDD1\';
+elseif strcmp(OS,'windows_data7')
+    input_Hard_Drive = 'G:\';
+end
+
 if strcmp(mode,'image')
-    dataset_dir = 'G:\FLIR Datasets\Dataset\new_Jan2\tif\';    
+    dataset_dir = [input_Hard_Drive, 'FLIR Datasets\Dataset\new_Jan2\tif'];
 else
-    dataset_dir = 'G:\FLIR Datasets\Dataset\new_Jan2\';
+    dataset_dir = [input_Hard_Drive, 'FLIR Datasets\Dataset\new_Jan2\'];
 end
 
 %%
@@ -275,12 +283,12 @@ function [Area , PC] = save_video_from_video_tif(dataset_dir)
             disp(['Frame:',num2str(index)]), end
         
         im = imread(filename, index);
+%         im = func_normalize(im,1);
+%         [im, Background] = removeBackground(im);
+%         [prediction, im1 , im4] = apply_filter_V2(im, Background, "same");
+        [prediction,im1] = segmentation(im);
         im = func_normalize(im,1);
-        
-        
-        [im, Background] = removeBackground(im);
 
-        [prediction, im1 , im4] = apply_filter_V2(im, Background, "same");
         
         obj = regionprops(prediction(40:end,40:end) , 'Area');
         Area{index} = cat(1,obj.Area);
