@@ -16,10 +16,10 @@
 % example assumes that the object left the field of view and it deletes the
 % track.
 
-
 function Tracking()  % modified MotionBasedMultiObjectTracking
 
-    UserInfo = init_directories('windows_data7');
+    addpath(genpath('.'))
+    UserInfo = init_directories();
 
     filename = [UserInfo.Directories.address , UserInfo.Directories.TIF_video];
     info = imfinfo(filename);
@@ -34,10 +34,9 @@ function Tracking()  % modified MotionBasedMultiObjectTracking
     % while ~isDone(obj.reader)   % Detect moving objects, and track them across video frames.
     for index = 1:L
         disp(['index',string(index)])
-        frame = reading_frame(index, UserInfo.inputMode);
-%         [mask, frame_enhanced] = segmentation(frame);
-        frame_enhanced = enhancement_filter(frame, "same");
-        mask = segmentation(frame_enhanced, Background);
+%         frame = reading_frame(index, UserInfo.inputMode);
+        frame = imread(filename, index);
+        [mask, frame] = segmentation(frame, UserInfo);
 
         Results = detecting_objects(mask);        
         bboxes = Results.bboxes;
@@ -54,22 +53,37 @@ function Tracking()  % modified MotionBasedMultiObjectTracking
     end
 
 
-    function UserInfo = init_directories(OS)
+    function UserInfo = init_directories()
         
-        if strcmp(OS,'linux_data7')
-            input_Hard_Drive = '\media\artin\HDD1\';
-        elseif strcmp(OS,'windows_data7')
-            input_Hard_Drive = 'H:\Datasets\';
+%         if strcmp(OS,'linux_data7')
+%             input_Hard_Drive = '\media\artin\HDD1\';
+%         elseif strcmp(OS,'windows_data7')
+%             input_Hard_Drive = 'H:\Datasets\';
+%         end
+% 
+%         UserInfo.Directories.address   = [input_Hard_Drive, 'FLIR Datasets\Dataset\new_Jan2\'];
+%         UserInfo.Directories.video     = 'Rec-000020 - Copy - test.wmv';
+%         UserInfo.Directories.TIF_video = 'Rec-000020 - Copy - test.tif';
+%         UserInfo.inputMode = 'reading_tif_video';
+% 
+%         if contains(OS,'linux')
+%              UserInfo.Directories.address = strrep(UserInfo.Directories.address,'\','/');
+%         end
+
+        [name,path] = uigetfile('H:\Datasets\FLIR Datasets\sample\Rec-000020\','Select Input Video');
+        UserInfo.Directories.address = path;
+        UserInfo.Directories.TIF_video = name;
+        
+        a = strsplit(name,'.');
+        UserInfo.Directories.video     = [a{1},'.wmv'];
+
+        if strcmp(a{2},'tif')
+            UserInfo.inputMode = 'reading_tif_video';
+        else
+            UserInfo.inputMode = 'reading_ats_video';
         end
 
-        UserInfo.Directories.address   = [input_Hard_Drive, 'FLIR Datasets\Dataset\new_Jan2\'];
-        UserInfo.Directories.video     = 'Rec-000020 - Copy - test.wmv';
-        UserInfo.Directories.TIF_video = 'Rec-000020 - Copy - test.tif';
-        UserInfo.inputMode = 'reading_tif_video';
 
-        if contains(OS,'linux')
-             UserInfo.Directories.address = strrep(UserInfo.Directories.address,'\','/');
-        end
 
         UserInfo.invisibleForTooLong = 20;
         UserInfo.ageThreshold = 8; 

@@ -14,7 +14,10 @@ function [Area , PC] = save_video_from_video_wmv(dataset_dir, name)
         im = rgb2gray(videoFrame);                
         [prediction,im_enhanced] = segmentation(im);
         
-        [Area{index}, PC(index)] = detect_Area_PC( prediction(40:end,40:end) );
+        Results = detecting_objects(prediction(40:end,40:end));
+        
+        Area{index} = Results.Area;
+        PC(index)   = Results.PC;
         
         frame = im2frame(merge_prediction_image(im , im_enhanced , prediction));
         writeVideo(writerObj, frame);
