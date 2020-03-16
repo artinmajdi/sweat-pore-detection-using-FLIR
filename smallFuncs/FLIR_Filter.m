@@ -1,6 +1,10 @@
 
-
-Directory_output = 'G:\Google Drive\RESEARCH - UofA Account\Data7\FLIR\';
+if ~exist('Directory_output')
+    dir = uigetdir(pwd,'Select Directory that you want to save the output');
+    name = inputdlg('write output name e.g. prediction');
+    Directory_output = fullfile(dir , '/' , name{1},'csv'); % 'H:\Datasets\FLIR Datasets\';  %    
+end
+% Directory_output = 'H:\Datasets\FLIR Datasets\';  %uigetdir; %  
 
 % h = size(rir_filter_input, 1);
 % w = size(rir_filter_input, 2);
@@ -36,4 +40,4 @@ Results = detecting_objects(prediction);
 Area = mean(Results.Area);
 PC   = Results.PC;
 FN   = single(rir_filter_metadata_input.FrameNumber);
-dlmwrite( [Directory_output, 'output_table.csv'] ,[FN, Area,PC],'delimiter',',','precision',5,'-append')
+dlmwrite( Directory_output ,[FN, Area,PC],'delimiter',',','precision',5,'-append') ; % [Directory_output, '\output_table.csv']
