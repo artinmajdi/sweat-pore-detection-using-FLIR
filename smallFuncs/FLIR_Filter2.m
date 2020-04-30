@@ -20,11 +20,14 @@ end
 MAX = max(rir_filter_input(:));
 
 
+MAX_withoutLED = max(max(rir_filter_input(1:300,:)));
+MIN_withoutLED = min(min(rir_filter_input(1:300,:)));
+rir_filter_input(rir_filter_input > MAX_withoutLED) = MAX_withoutLED;
+
+% UserInfo.pore_size_range = [1,15];
+[prediction] = segmentation2(rir_filter_input);
+
 frame = func_normalize(rir_filter_input,1);
-
-UserInfo.pore_size_range = [1,15];
-[prediction, ~] = segmentation(frame, UserInfo);
-
 
 % method 1: showing them as white spots
 frame = cat(3,prediction,frame,frame);
@@ -35,7 +38,7 @@ frame = rgb2gray(frame);
 % frame(prediction == 1) = 0;
 
 rir_filter_output = im2single(frame, 'indexed');
-
+% rir_filter_output = rir_filter_input;
 
 Results = detecting_objects(prediction);        
 Area = mean(Results.Area);

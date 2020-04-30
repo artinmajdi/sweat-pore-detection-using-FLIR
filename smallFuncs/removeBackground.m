@@ -1,6 +1,6 @@
 function [im_wo_background, Background] = removeBackground(im)
 
-    thresh = 0.1;
+    thresh = 0.2;
     Background = im*0;
     Background(im < thresh) = 1;
     Background = imclose(Background,strel('disk',20));
