@@ -1,49 +1,43 @@
 
 if ~exist('Directory_output')
-    dir = uigetdir(pwd,'Select Directory that you want to save the output');
-    name = inputdlg('write output name e.g. prediction');
+    path = 'E:\Data7\FLIR\Dataset\Fine\Fine'; % pwd
+    dir = uigetdir(path,'Select Directory that you want to save the output');
+    name = inputdlg('write output name','Input',[1,35],{'prediction'});
     Directory_output = fullfile(dir , '/' , [name{1},'.csv']); % 'H:\Datasets\FLIR Datasets\';  %    
 end
-% Directory_output = 'H:\Datasets\FLIR Datasets\';  %uigetdir; %  
 
-% h = size(rir_filter_input, 1);
-% w = size(rir_filter_input, 2);
+% dir = 'E:\Data7\FLIR\Dataset\Fine\Fine';
+% name = {'prediction'};
+% Directory_output = fullfile(dir , '/' , [name{1},'.csv']); % 'H:\Datasets\FLIR Datasets\';  %    
+
 
 % if rir_filter_reset
-% 	rir_filter_output = zeros(h, w, class(rir_filter_input));
+    % h = size(rir_filter_input, 1);
+    % w = size(rir_filter_input, 2);
+    % rir_filter_output = zeros(h, w, class(rir_filter_input));
 % end
 
-% rir_filter_metadata_output.Average = mean(rir_filter_input,'double');
-% rir_filter_metadata_output.Max = max(max(rir_filter_input));
-% rir_filter_metadata_output.Min = min(min(rir_filter_input));
 
+% Detecting LED
 MAX = max(rir_filter_input(:));
 
+% % Mitigating the Effect of LED When it's On
+rir_filter_input = mitigating_Effect_of_LED(rir_filter_input);
 
-MAX_withoutLED = max(max(rir_filter_input(1:300,:)));
-MIN_withoutLED = min(min(rir_filter_input(1:300,:)));
-rir_filter_input(rir_filter_input > MAX_withoutLED) = MAX_withoutLED;
-
-% UserInfo.pore_size_range = [1,15];
-[prediction] = segmentation2(rir_filter_input);
-
+% % Segmentation
 frame = func_normalize(rir_filter_input,1);
+prediction = segmentation2( struct('im',frame , 'binarization_threshold',0.2 , 'ClipLimit',0.2) );
 
-% method 1: showing them as white spots
-frame = cat(3,prediction,frame,frame);
-frame = rgb2gray(frame);
+% Post Processing
+[prediction, background] = Post_Processing( struct('im',frame , 'prediction', prediction ,  'background_thresh',0.2) );
 
+% Overlaying Detected Spots Onto the Image
+rir_filter_output = overlaying_prediction( struct('frame',frame , 'prediction', prediction) );
 
-% % method 2: showing them as black spots
-% frame(prediction == 1) = 0;
+% Writing the outputs
+writing_outputs( struct('Directory_output',Directory_output , 'prediction',prediction , 'FN',single(rir_filter_metadata_input.FrameNumber) , 'MAX',MAX) ) 
 
-rir_filter_output = im2single(frame, 'indexed');
-% rir_filter_output = rir_filter_input;
-
-Results = detecting_objects(prediction);        
-Area = mean(Results.Area);
-PC   = Results.PC;
-FN   = single(rir_filter_metadata_input.FrameNumber);
-% Area = 0;
-% PC = 0;
-dlmwrite( Directory_output ,[FN, Area,PC,MAX],'delimiter',',','precision',5,'-append') ; % [Directory_output, '\output_table.csv']
+% background = frame < 0.4;
+% background(200:end,:) = 0;
+% background = rgb2gray( cat(3,background,background,frame) );
+% rir_filter_output = rir_filter_input; % im2single(background, 'indexed');

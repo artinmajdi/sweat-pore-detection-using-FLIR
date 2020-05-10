@@ -1,8 +1,8 @@
-function [mask] = segmentation2(im)
+function mask = segmentation2(inputs)
 
-im = func_normalize(im,1);
-% im = filter2(ones(3,3)/9,im);
-im3 = adapthisteq(im,'NumTiles',[50,50],'ClipLimit',0.9);
-mask = medfilt2(im3,[3,3]) < 0.1;
+% % inputs.im = filter2(ones(3,3)/9,inputs.im);
+im3 = adapthisteq(inputs.im,'NumTiles',[50,50],'ClipLimit',inputs.ClipLimit);
+im3 = medfilt2(im3,[3,3]);
+mask = im3 < inputs.binarization_threshold;
 
 end
