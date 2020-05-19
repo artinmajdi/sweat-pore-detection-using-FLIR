@@ -8,11 +8,7 @@ function writing_outputs(inputs)
     FA  = inputs.Foreground_Area;
     
     TS = split(inputs.TimeStamp,':');
-    day    = double(string(TS{1}));
-    hour   = double(string(TS{2}));
-    minute = double(string(TS{3}));
-    second = double(string(TS{4}));
     
-    dlmwrite( inputs.Directory_output ,[FN, PC,Area,FA, LED, day,hour,minute,second]  ,  'delimiter',','  ,  '-append');
+    dlmwrite( inputs.Directory_output ,[FN, PC,Area,FA, split(TS), LED]  ,  'delimiter',','  ,  '-append');
 
 end

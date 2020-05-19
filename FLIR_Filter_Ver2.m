@@ -12,15 +12,15 @@ if ~exist('Directory_output','var')
     % Background = roipoly(rir_filter_input);
 end
 
-% Directory_output = fullfile( 'E:\Data7\FLIR\Dataset\Fine\Fine' , '/prediction.csv']);
-
 
 % if rir_filter_reset
-    % h = size(rir_filter_input, 1);
-    % w = size(rir_filter_input, 2);
-    % rir_filter_output = zeros(h, w, class(rir_filter_input));
+%     clear all
+% %     h = size(rir_filter_input, 1);
+% %     w = size(rir_filter_input, 2);
+% %     rir_filter_output = zeros(h, w, class(rir_filter_input));
 % end
 
+disp(rir_filter_reset)
 
 % Detecting LED
 MAX = max(rir_filter_input(:));
@@ -39,7 +39,9 @@ prediction = Post_Processing( struct('prediction', prediction  ,  'background',b
 rir_filter_output = overlaying_prediction( struct('frame',frame , 'prediction', prediction) );
 
 % Writing the outputs
-writing_outputs( struct('Directory_output',Directory_output , 'prediction',prediction , 'FN',single(rir_filter_metadata_input.FrameNumber) , 'MAX',MAX) ) 
+out_data = struct('Directory_output',Directory_output , 'prediction',prediction , 'FN',single(rir_filter_metadata_input.FrameNumber) ,'MAX',MAX,'Foreground_Area', sum(~background(:)),'TimeStamp',rir_filter_metadata_input.Time );
 
+
+writing_outputs( out_data ) 
 
 % rir_filter_output = rir_filter_input; % im2single(background, 'indexed');
