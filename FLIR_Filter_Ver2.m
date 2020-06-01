@@ -3,13 +3,6 @@ if ~exist('Directory_output','var')
     addpath('smallFuncs')
     Directory_output = '';
     app_main()
-    
-    % writematrix(["Frame Number", "Area","Number of Pores","LED State"] , Directory_output)    
-    % path = 'E:\Data7\FLIR\Dataset\Fine\Fine'; % pwd
-    % dir = uigetdir(path,'Select Directory that you want to save the output');
-    % name = inputdlg('write output name','Input',[1,35],{'prediction'});
-    % Directory_output = fullfile(dir , '/' , [name{1},'.csv']); % 'H:\Datasets\FLIR Datasets\';  %  
-    % Background = roipoly(rir_filter_input);
 end
 
 
@@ -23,13 +16,13 @@ end
 disp(rir_filter_reset)
 
 % Detecting LED
-MAX = max(rir_filter_input(:));
+Light_Bulb = detect_light_bulb( rir_filter_input , lightBulb_detection_mode , lightBulb_area );
 
-% % Mitigating the Effect of LED When it's On
-rir_filter_input = mitigating_Effect_of_LED(rir_filter_input, background);
+% Mitigating the Effect of LED When it's On
+frame = mitigating_Effect_of_LED(rir_filter_input, background);
 
 % % Segmentation
-frame = func_normalize(rir_filter_input,1);
+frame = func_normalize(frame,1);
 prediction = segmentation2( struct('im',frame , 'binarization_threshold',binarization_threshold , 'ClipLimit',0.2) );
 
 % Post Processing
@@ -39,9 +32,8 @@ prediction = Post_Processing( struct('prediction', prediction  ,  'background',b
 rir_filter_output = overlaying_prediction( struct('frame',frame , 'prediction', prediction) );
 
 % Writing the outputs
-out_data = struct('Directory_output',Directory_output , 'prediction',prediction , 'FN',single(rir_filter_metadata_input.FrameNumber) ,'MAX',MAX,'Foreground_Area', sum(~background(:)),'TimeStamp',rir_filter_metadata_input.Time );
+out_data = struct('Directory_output',Directory_output , 'prediction',prediction , 'FN',single(rir_filter_metadata_input.FrameNumber), 'Light_Bulb', Light_Bulb, 'Foreground_Area', sum(~background(:)),'TimeStamp',rir_filter_metadata_input.Time );
 
-
+% Writing the output in CSV
 writing_outputs( out_data ) 
-
 % rir_filter_output = rir_filter_input; % im2single(background, 'indexed');
