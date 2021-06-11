@@ -32,8 +32,11 @@ prediction = Post_Processing( struct('prediction', prediction  ,  'background',b
 rir_filter_output = overlaying_prediction( struct('frame',frame , 'prediction', prediction) );
 
 % Writing the outputs
-out_data = struct('Directory_output',Directory_output , 'prediction',prediction , 'FN',single(rir_filter_metadata_input.FrameNumber), 'Light_Bulb', Light_Bulb, 'Foreground_Area', sum(~background(:)),'TimeStamp',rir_filter_metadata_input.Time );
+out_data = struct('directory_output',Directory_output , 'frame',frame, 'foreground',~background, 'prediction',prediction , 'FN',single(rir_filter_metadata_input.FrameNumber), 'Light_Bulb', Light_Bulb, 'Foreground_Area', sum(~background(:)),'TimeStamp',rir_filter_metadata_input.Time );
 
 % Writing the output in CSV
-writing_outputs( out_data ) 
+writing_outputs( out_data )
+
 % rir_filter_output = rir_filter_input; % im2single(background, 'indexed');
+
+
